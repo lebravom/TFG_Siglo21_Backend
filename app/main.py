@@ -1,4 +1,3 @@
-import logging
 import json
 import asyncio
 import tempfile
@@ -11,49 +10,29 @@ from fastapi.responses import StreamingResponse
 from ollama import chat
 from pathlib import Path
 from docling.document_converter import DocumentConverter
-
-
+from sqlmodel import SQLModel
+ 
 # Importamos los modelos de SQLAlchemy y los esquemas de Pydantic
-from schemas import ResultadoMedicion
-from database import Base, engine
+from app.models.variable import Variables
+from app.db.database import engine
+from app.core.logging import setup_logging, logger
+from app.core.config import config, origins, ollama_config
+from app.api.v1 import usuarios
 
-Base.metadata.create_all(bind=engine)
 
-
-
-
-app = FastAPI()
+SQLModel.metadata.create_all(engine)
+setup_logging()
+app = FastAPI(title=config.app_name)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - [%(funcName)s] - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-
-logger = logging.getLogger(__name__)
-
-origins = [
-    "http://localhost:4200",     # Tu frontend Angular
-    "http://127.0.0.1:4200",     # Variante por IP local
-    "http://localhost:8000",     # El propio backend 
-]
-
 # ==========================================
-# INICIALIZAMOS DOCLING
+# INICIALIZACIÓN DE RUTAS
 #===========================================
-os.environ["HF_HUB_OFFLINE"] = "1"
-converter = DocumentConverter()
+app.include_router(usuarios.router, prefix="/api/v1")
 
 # ==========================================
-# CONFIGURACIÓN DE OLLAMA
-# ==========================================
-OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "llama3.1:8b" 
-
-
-
-
+# INICIALIZACIÓN DE CORS
+#===========================================
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -61,6 +40,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ==========================================
+# INICIALIZAMOS DOCLING
+#===========================================
+os.environ["HF_HUB_OFFLINE"] = "1"
+converter = DocumentConverter()
+
+
 
 def _extract_text_from_pdf(file_path: Path) -> str:
     logger.info(f"Extrayendo texto del archivo {file_path} con pdfplumber...")
@@ -81,7 +69,7 @@ def _extract_text_from_pdf(file_path: Path) -> str:
     return str(texto_markdown)
 
 async def _query_ollama(text: str):
-    logger.info(f"Enviando petición a Ollama en {OLLAMA_URL} con JSON Schema...")
+    logger.info(f"Enviando petición a Ollama en {ollama_config["OLLAMA_URL"]} con JSON Schema...")
     
     
     prompt = [{
@@ -90,25 +78,20 @@ async def _query_ollama(text: str):
         Tu tarea es analizar el siguiente fragmento de texto extraído de un PDF y extraer exactamente tres valores.          
                                                                                                                             
         Instrucciones de extracción:        
-        - Busca 'Sample Title' y asígnalo al campo sample_name.
-        - Busca 'Sample Description' o 'Sample Identification' y combina su contenido si es necesario. Asígnalo al campo sample_description.
-        - Busca 'Sample Size' (asegúrate de incluir el número y la unidad, por ejemplo 'KG') y asígnalo al campo sample_size.
+        - Busca los radionucleidos identificados y completa los campos requeridos en el esquema proporcionado.
 
         Devuelve EXCLUSIVAMENTE un objeto JSON válido que cumpla con el esquema proporcionado. No agregues texto introductorio ni explicaciones.
 
         Texto del reporte:
         ------------------
         {text}
-        ------------------""",
+        ------------------"""
     }]
     
-    
-    
-    
     response = chat (
-        model=OLLAMA_MODEL,
+        model=ollama_config["OLLAMA_MODEL"],
         messages=prompt,
-        format=ResultadoMedicion.model_json_schema(),
+        format=Variables.model_json_schema(),
         options={'temperature': 0},
     )
 
@@ -117,43 +100,13 @@ async def _query_ollama(text: str):
         logger.error("Ollama retornó contenido vacío.")
         raise RuntimeError("Ollama returned no content.")
 
-    resultados = ResultadoMedicion.model_validate_json(response_content)
+    resultados = Variables.model_validate_json(response_content)
 
     print(resultados)
-    # payload : dict[str, Any]= {
-    #     "model": OLLAMA_MODEL,
-    #     "prompt": prompt,
-    #     "format": ResultadoMedicion.model_json_schema(),  # Obligamos a Ollama a usar este esquema JSON
-    #     "stream": False
-    # }
-
-    # resultado: list[dict[str, Any]] = []  
-    # try:
-    #     async with httpx.AsyncClient(timeout=600.0) as client:
-    #         response = await client.post(OLLAMA_URL, json=response)
-    #         response.raise_for_status()
-    #         data = response.json()
- 
-            # La respuesta vendrá como un string en formato JSON gracias al parámetro "format"
-        #    raw_response = data.get("response", "{}")
-            
-            
-            # Convertimos el string JSON devuelto por la IA a un diccionario de Python
-        #     resultado_estructurado = ResultadoMedicion.model_validate_json(raw_response)
-        #     resultado.append({
-        #         "sampleTitle": resultado_estructurado.sampleTitle,
-        #         "sampleDescription": resultado_estructurado.sampleDescription,
-        #         "sampleSize": resultado_estructurado.sampleSize
-        #     })
 
 
     return resultados
             
-    # except resultados.JSONDecodeError:
-    #     logger.error("Ollama devolvió una respuesta que no es un JSON válido.")
-    #     raise RuntimeError("Fallo de formato: La IA no respetó el esquema JSON.")
-    
-
 
 
 @app.post("/api/v1/mediciones/procesar")
