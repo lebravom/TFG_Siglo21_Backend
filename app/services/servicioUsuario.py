@@ -1,7 +1,7 @@
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
-from app.models.usuario import Usuario
+from models.usuario import Usuario
 
 class ServicioUsuario:
     def __init__(self, session: Session):

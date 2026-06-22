@@ -1,8 +1,11 @@
-from typing import Optional, List
-from sqlmodel import Relationship, SQLModel, Field
-from models.variable import Variables
+from typing import Optional, List, TYPE_CHECKING
+from sqlmodel import Column, Relationship, SQLModel, Field, Text
 
-class Mediciones(SQLModel, table=True):
+if TYPE_CHECKING:
+    from models.variable import variable
+
+class medicion(SQLModel, table=True):
+
     id: Optional[int] = Field(default=None, primary_key=True)
 
     sampleTitle: str = Field(
@@ -16,5 +19,27 @@ class Mediciones(SQLModel, table=True):
         max_length=100,
         description="El tanaño, peso o volumen de la muestra, incluyendo su unidad de medida."
     )
+    sampleType: str = Field(
+        max_length=50,
+        description="El estado o tipo de la muestra. Ej: 'SOLIDO'."
+    )
+    sampleGeometry: str = Field(
+        max_length=50,
+        description="La geometría o tamaño de la muestra. Ej: '250CM3'."
+    )
+    sampleTakenOn: str = Field(
+        max_length=100,
+        description="Fecha y hora de la toma de muestra. Ej: '02/01/2026 02:15:00 PM'."
+    )
+    
+    acquisitionStarted: str = Field(
+        max_length=100,
+        description="Fecha y hora del inicio de adquisición. Ej: '12/01/2026 09:11:27 AM'."
+    )
 
-    variables: List["Variables"] = Relationship(back_populates="medicion")
+    texto_markdown: Optional[str] = Field(
+        default=None, 
+        sa_column=Column(Text) # Le indicamos a SQLAlchemy que use TEXT en la DB
+    )
+
+    variables: List["variable"] = Relationship(back_populates="medicion")

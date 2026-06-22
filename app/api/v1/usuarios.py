@@ -2,9 +2,9 @@ from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.db.database import sessionLocal
-from app.services.servicioUsuario import ServicioUsuario
-from app.models.usuario import Usuario
+from db.database import sessionLocal
+from services.servicioUsuario import ServicioUsuario
+from models.usuario import Usuario
 
 
 router = APIRouter()

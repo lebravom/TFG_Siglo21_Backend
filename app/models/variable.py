@@ -1,11 +1,13 @@
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 from sqlmodel import SQLModel, Field, Relationship
 
-from models.medicion import Mediciones
+if TYPE_CHECKING:
+    from models.medicion import medicion
 
-class Variables(SQLModel, table=True):
+class variable(SQLModel, table=True):
+
     id: Optional[int] = Field(default=None, primary_key=True)
-    medicion_id: Optional[int] = Field(default=None, foreign_key="mediciones.id")
+    medicion_id: int = Field(foreign_key="mediciones.id")
     nuclideName: str = Field(
         max_length=50,
         description="El nombre del radionucleido identificado en la pagina 'NUCLIDE IDENTIFICATION REPORT'",
@@ -22,5 +24,5 @@ class Variables(SQLModel, table=True):
         description="La incerteza de la actividad en la pagina 'NUCLIDE IDENTIFICATION REPORT'",
     )
     # Relación inversa (Esta variable pertenece a una medición)
-    medicion: Optional[Mediciones] = Relationship(back_populates="variables")
+    medicion: "medicion" = Relationship(back_populates="variables")
     

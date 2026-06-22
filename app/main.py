@@ -13,11 +13,10 @@ from docling.document_converter import DocumentConverter
 from sqlmodel import SQLModel
  
 # Importamos los modelos de SQLAlchemy y los esquemas de Pydantic
-from app.models.variable import Variables
-from app.db.database import engine
-from app.core.logging import setup_logging, logger
-from app.core.config import config, origins, ollama_config
-from app.api.v1 import usuarios
+from db.database import engine
+from core.logging import setup_logging, logger
+from core.config import config, origins, ollama_config
+from api.v1 import usuarios
 
 
 SQLModel.metadata.create_all(engine)
@@ -29,6 +28,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # INICIALIZACIÓN DE RUTAS
 #===========================================
 app.include_router(usuarios.router, prefix="/api/v1")
+
 
 # ==========================================
 # INICIALIZACIÓN DE CORS
@@ -91,7 +91,7 @@ async def _query_ollama(text: str):
     response = chat (
         model=ollama_config["OLLAMA_MODEL"],
         messages=prompt,
-        format=Variables.model_json_schema(),
+        format=variable.model_json_schema(),
         options={'temperature': 0},
     )
 
@@ -100,7 +100,7 @@ async def _query_ollama(text: str):
         logger.error("Ollama retornó contenido vacío.")
         raise RuntimeError("Ollama returned no content.")
 
-    resultados = Variables.model_validate_json(response_content)
+    resultados = variable.model_validate_json(response_content)
 
     print(resultados)
 
