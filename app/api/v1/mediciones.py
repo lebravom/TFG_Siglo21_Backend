@@ -6,10 +6,11 @@ from sqlmodel import Session
 from ollama import AsyncClient, ResponseError, chat
 from services.servicioMedicion import servicioMedicion
 from services.servicioConversion import servicioConversion
-from models.medicion import medicion
+from models.medicion import Medicion # pyright: ignore[reportUnusedImport]
+from models.variable import Variable  # pyright: ignore[reportUnusedImport]
 from db.database import get_db
-from app.core.config import ollama_config
-from app.core.logging import logger
+from core.config import ollama_config
+from core.logging import logger
 
 
 router = APIRouter()
@@ -117,6 +118,8 @@ async def extraer_datos_desde_markdown(markdown: str) -> medicion:
 
     esquema_medicion = medicion.model_json_schema()
 
+    logger.info(f"Enviando petición a Ollama en {ollama_config['OLLAMA_URL']} con JSON Schema...")
+    
     try:
         client = AsyncClient()
         response = await client.chat(
@@ -129,10 +132,11 @@ async def extraer_datos_desde_markdown(markdown: str) -> medicion:
                     f"Esquema: {esquema_medicion}\n\n"
                     f"Texto Markdown:\n{markdown}"
                 )}],
-            format=esquema_medicion,
+            format=medicion.model_json_schema(),
             options={"temperature": 0}
         )
-
+        logger.info("Chat exitoso, respuesta %s", response)
+    
         raw_json = response["message"]["content"]
         medicion_resultado = medicion.model_validate_json(raw_json)
         logger.info("Extracción exitosa :%s", medicion_resultado)

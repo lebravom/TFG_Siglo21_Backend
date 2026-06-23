@@ -14,8 +14,8 @@ def get_user_service() -> ServicioUsuario:
 
 
 @router.get("/usuarios", response_model=List[Usuario])
-def obtener_usuarios(service: ServicioUsuario = Depends(get_user_service)):
-    return service.listar_usuarios()
+def obtener_usuarios(usuario_svc: ServicioUsuario = Depends(get_user_service)):
+    return usuario_svc.listar_usuarios()
 
 
 @router.post("/usuarios", response_model=Usuario)

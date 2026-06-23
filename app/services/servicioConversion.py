@@ -1,7 +1,9 @@
 import os
 import tempfile
+from pathlib import Path
+
 from docling.document_converter import DocumentConverter
-from fastapi import Path, UploadFile
+from fastapi import UploadFile
 
 
 # ==========================================

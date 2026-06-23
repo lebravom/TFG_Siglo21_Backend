@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
-from pydantic_settings import BaseSettings
+from pydantic import SecretStr # type: ignore 
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
 
@@ -28,9 +29,17 @@ class Config(BaseSettings):
     db_password: str = "admin"
     db_name: str = "mediciones.db"
 
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
+
     @property
     def db_url(self):
         return f"sqlite:///./{self.db_name}"
     
+    secret_key: str = "SecretKey"
+    algorithm:str ="H256"
+    access_token_expire_minutes: int = 60
 
-config = Config()
+config = Config() # type: ignore[call-arg] # Loaded from .env file

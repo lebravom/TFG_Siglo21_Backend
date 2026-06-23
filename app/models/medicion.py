@@ -1,13 +1,16 @@
 from typing import Optional, List, TYPE_CHECKING
+from sqlalchemy.orm import Mapped, relationship
 from sqlmodel import Column, Relationship, SQLModel, Field, Text
 
-if TYPE_CHECKING:
-    from models.variable import variable
 
-class medicion(SQLModel, table=True):
+if TYPE_CHECKING:
+    from models.variable import Variable
+
+
+class Medicion(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
-
+    medicion_id: int = Field(foreign_key="medicion.id")
     sampleTitle: str = Field(
         max_length=255,
         description="El nombre o título de la muestra. En el documento suele aparecer como 'Sample Title'."
@@ -42,4 +45,5 @@ class medicion(SQLModel, table=True):
         sa_column=Column(Text) # Le indicamos a SQLAlchemy que use TEXT en la DB
     )
 
-    variables: List["variable"] = Relationship(back_populates="medicion")
+    variables: Mapped[List["Variable"]] = Relationship(back_populates="medicion")
+    
