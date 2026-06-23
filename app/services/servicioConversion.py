@@ -1,7 +1,7 @@
 import os
 import tempfile
-from pathlib import Path
-
+from io import BytesIO
+from pypdf import PdfWriter, PdfReader
 from docling.document_converter import DocumentConverter
 from fastapi import UploadFile
 
@@ -16,32 +16,62 @@ class servicioConversion:
     def __init__(self):
         self.converter = DocumentConverter()
 
-    async def convertir_a_markdown(self, archivo: UploadFile) -> str:
-        # Extraigo la extensión original del archivo (ej. '.pdf')
-        extension = Path(archivo.filename).suffix if archivo.filename else ".pdf"
+    async def convertir_a_markdown(self, archivo: BytesIO) -> str:
+        """
+        Convierto un documento contenido en BytesIO a markdown utilizando Docling
+        """
+        
+        archivo.seek(0)
 
-        # Creo un archivo físico temporal
-        with tempfile.NamedTemporaryFile(delete=False, suffix=extension) as tmp:
-            content = await archivo.read()
-            tmp.write(content)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            tmp.write(archivo.getvalue())
             tmp_path = tmp.name
 
         try:
-            # Convertir el documento
             resultado = self.converter.convert(tmp_path)
-
-            # 3 exportar el resultado a markdown
-            texto_markdown = resultado.document.export_to_markdown()
-
-            return texto_markdown
-        
+            return resultado.document.export_to_markdown()
         except Exception as e:
-            # Agrego logs más específicos si falla el OCR o la conversión
-            raise ValueError(f"Error al procesar el documento con Docling: {str(e)}")
-            
+            raise ValueError(f"Error en Docling: {str(e)}")
         finally:
-            # 4. Limpieza garantizada: Eliminar el archivo temporal del disco
-            # Se ejecuta siempre, incluso si Docling lanza una excepción
             if os.path.exists(tmp_path):
-                os.remove(tmp_path)     
+                os.remove(tmp_path)  
+
+    
+    async def extraer_pagina(self, file: UploadFile, pagina: int) -> BytesIO:
+        """
+        Extrae la página especificada de un PDF recibido como UploadFile.
+        Los números de página comienzan en 1.
+        Retorna un objeto BytesIO con el PDF de una sola página.
+        Argumento: 
+            file: Objeto UploadFile
+        retorno:
+            bytes: Contenido del nuevo PDF solo con la primer página.
+        Raises:
+            ValueError: Si el PDF está vacío o no tiene páginas.
+        """
+        contenido = await file.read()
+
+        if not contenido:
+            raise ValueError("El archivo está vacío")
+        
+        pdf_bytes= BytesIO(contenido)
+        lector = PdfReader(pdf_bytes)
+
+        if pagina < 1 or pagina > len(lector.pages):
+            raise ValueError(f"La página {pagina} no existe. El PDF tiene {len(lector.pages)} páginas.")
+        
+        escritor = PdfWriter()
+
+        escritor.add_page(lector.pages[pagina -1])
+
+        output = BytesIO()
+        escritor.write(output)
+        output.seek(0)
+
+        
+        return output
+
+    
+
+    
         

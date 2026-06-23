@@ -1,5 +1,5 @@
 from typing import Optional, TYPE_CHECKING
-from sqlmodel import ForeignKey, Relationship, SQLModel, Field
+from sqlmodel import Relationship, SQLModel, Field
 
 if TYPE_CHECKING:
     from models.medicion import Medicion

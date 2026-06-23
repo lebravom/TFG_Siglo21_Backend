@@ -1,10 +1,7 @@
-from typing import Optional, List, TYPE_CHECKING
+from typing import Optional, List
 from sqlalchemy.orm import Mapped, relationship
 from sqlmodel import Column, Relationship, SQLModel, Field, Text
-
-
-if TYPE_CHECKING:
-    from models.variable import Variable
+from models.variable import Variable
 
 
 class Medicion(SQLModel, table=True):
@@ -45,5 +42,5 @@ class Medicion(SQLModel, table=True):
         sa_column=Column(Text) # Le indicamos a SQLAlchemy que use TEXT en la DB
     )
 
-    variables: Mapped[List["Variable"]] = Relationship(back_populates="medicion")
+    variables: Mapped[List["Variable"]] = Relationship(sa_relationship=relationship(back_populates="medicion"))
     

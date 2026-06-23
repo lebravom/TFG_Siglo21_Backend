@@ -1,13 +1,11 @@
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-
 from pydantic import ValidationError
 from typing import Any, Dict
 from sqlmodel import Session
 from ollama import AsyncClient, ResponseError, chat
 from services.servicioMedicion import servicioMedicion
 from services.servicioConversion import servicioConversion
-from models.medicion import Medicion # pyright: ignore[reportUnusedImport]
-from models.variable import Variable  # pyright: ignore[reportUnusedImport]
+from models.medicion import Medicion 
 from db.database import get_db
 from core.config import ollama_config
 from core.logging import logger
@@ -54,11 +52,12 @@ async def procesar_medicion(
     # Reiniciar el puntero del archivo
     await archivo.seek(0)
 
+    primer_pagina = await conversion_svc.extraer_pagina(archivo, 1)
     # Dado que es un PDF y que pesa menos de 25 MB se procede a convertir a Markdown
     logger.info("El archivo esta convirtiendose.")
     try:
-        markdown_result = await conversion_svc.convertir_a_markdown(archivo)
-      
+        primer_pagina_markdown = await conversion_svc.convertir_a_markdown(primer_pagina)
+        logger.info(f"el contenido de la primer pagina es: {primer_pagina_markdown}" )
 
     except ValueError as e:
         logger.error("Error en conversión de PDF: %s", str(e))
@@ -75,9 +74,10 @@ async def procesar_medicion(
     # 4. Grabado de la nueva medición en la tabla de auditoria
 
 
-    # 4. Extracción de los datos de la medición (Envio al servicio de OLLAMA)
+    # 4. Extracción de los datos de la cabecera de la medición (Envio al servicio de OLLAMA)
     try:
-        datos_medicion = await extraer_datos_desde_markdown(markdown_result)
+        datos_medicion = await extraer_datos_desde_markdown(primer_pagina_markdown)
+        logger.info(f"Los primeros datos extraidos son: {datos_medicion}")
     except ValueError as e:
         logger.error("Error extrayendo datos de medición: %s", str(e))
         raise HTTPException(
@@ -101,22 +101,28 @@ async def procesar_medicion(
     #        detail="Error interno al guardar la medición"
     #    )
     #
-    return {
+
+    medicion_data: Dict[str, Any] = datos_medicion.model_dump()
+    medicion_data["texto_markdown"] = primer_pagina_markdown
+
+    salida: Dict[str, Any] = {
         "filename": archivo.filename,
         "status": "success",
-        "medicion_id": "",
-        "medicion": datos_medicion.model_dump(),  # opcional: devuelve también los datos extraídos
+        "medicion_id": medicion_svc.obtener_ultimo_id(),
+        "medicion": medicion_data,
         "detail": "Medición procesada y almacenada correctamente"
     }
 
+    return salida
 
 
-async def extraer_datos_desde_markdown(markdown: str) -> medicion:
+
+async def extraer_datos_desde_markdown(markdown: str) -> Medicion:
     """ 
     Envio el markdown convertido a ollama esperando un objeto medición a la vuelta.
     """
 
-    esquema_medicion = medicion.model_json_schema()
+    esquema_medicion = Medicion.model_json_schema()
 
     logger.info(f"Enviando petición a Ollama en {ollama_config['OLLAMA_URL']} con JSON Schema...")
     
@@ -132,13 +138,13 @@ async def extraer_datos_desde_markdown(markdown: str) -> medicion:
                     f"Esquema: {esquema_medicion}\n\n"
                     f"Texto Markdown:\n{markdown}"
                 )}],
-            format=medicion.model_json_schema(),
+            format=Medicion.model_json_schema(),
             options={"temperature": 0}
         )
         logger.info("Chat exitoso, respuesta %s", response)
     
         raw_json = response["message"]["content"]
-        medicion_resultado = medicion.model_validate_json(raw_json)
+        medicion_resultado = Medicion.model_validate_json(raw_json)
         logger.info("Extracción exitosa :%s", medicion_resultado)
         return medicion_resultado
 
@@ -151,3 +157,5 @@ async def extraer_datos_desde_markdown(markdown: str) -> medicion:
     except Exception as e:
         logger.exception("Error inesperado al llamar a Ollama")
         raise RuntimeError("Fallo en la comunicación con el servicio Ollama")
+    
+
