@@ -1,11 +1,29 @@
+import sys
 import asyncio
+
+from sqlmodel import SQLModel
+
+from pathlib import Path
 from logging.config import fileConfig
 
 from sqlalchemy import pool
 from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
-
 from alembic import context
+
+# Añadir la raíz del proyecto al path de Python
+sys.path.append(str(Path(__file__).parent.parent))
+# Añadir también app/ para que los modelos puedan importarse con from app.models...
+sys.path.append(str(Path(__file__).parent.parent / "app"))
+
+
+from app.models.medicion import Medicion # type: ignore # noqa: F401
+from app.models.usuario import Usuario# type: ignore # noqa: F401
+from app.models.variable import Variable# type: ignore # noqa: F401
+
+
+# sys.path.append(str(Path(__file__).parent.parent / "app"))
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -20,7 +38,7 @@ if config.config_file_name is not None:
 # for 'autogenerate' support
 # from myapp import mymodel
 # target_metadata = mymodel.Base.metadata
-target_metadata = None
+target_metadata = SQLModel.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

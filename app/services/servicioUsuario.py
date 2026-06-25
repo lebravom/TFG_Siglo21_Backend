@@ -1,22 +1,24 @@
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, select
+from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlmodel import select
 
 from models.usuario import Usuario
 
 class ServicioUsuario:
-    def __init__(self, session: Session):
+    def __init__(self, session: AsyncSession):
         self._db = session
 
-    def listar_usuarios(self) -> list[Usuario]:
+    async def listar_usuarios(self) -> list[Usuario]:
         statement = select(Usuario)
-        usuarios = self._db.exec(statement).all()
-        return list(usuarios)
+        resultado = await self._db.exec(statement)
+        return list(resultado.all())
     
-    def obtener_usuario(self, user_id:int) -> Usuario | None:
+    async def obtener_usuario(self, user_id:int) -> Usuario | None:
         statement = select(Usuario).where(Usuario.id == user_id)
-        return self._db.exec(statement).first()
+        resultado = await self._db.exec(statement)
+        return resultado.first()
     
-    def crear_usuario(self, usuario_nuevo: Usuario) -> Usuario:
+    async def crear_usuario(self, usuario_nuevo: Usuario) -> Usuario:
         nuevo_usuario = Usuario(
             username = usuario_nuevo.username,
             email= usuario_nuevo.email,
@@ -24,26 +26,26 @@ class ServicioUsuario:
         )
         try: 
             self._db.add(nuevo_usuario)
-            self._db.commit()
-            self._db.refresh(nuevo_usuario)
+            await self._db.commit()
+            await self._db.refresh(nuevo_usuario)
             return nuevo_usuario
         except IntegrityError:
-            self._db.rollback()
+            await self._db.rollback()
             raise ValueError
 
-    def actualizar_usuario(self, user_id: int, nombre_nuevo: str) -> Usuario | None:
-        usuario = self.obtener_usuario(user_id)
+    async def actualizar_usuario(self, user_id: int, nombre_nuevo: str) -> Usuario | None:
+        usuario = await self.obtener_usuario(user_id)
         if not usuario:
             return None
         usuario.nombre = nombre_nuevo
-        self._db.commit()
-        self._db.refresh(usuario)
+        await self._db.commit()
+        await self._db.refresh(usuario)
         return usuario
     
-    def borrar_usuario(self, user_id: int) -> bool:
-        usuario = self.obtener_usuario(user_id)
+    async def borrar_usuario(self, user_id: int) -> bool:
+        usuario =await self.obtener_usuario(user_id)
         if not usuario:
             return False
-        self._db.delete(usuario)
-        self._db.commit()
+        await self._db.delete(usuario)
+        await self._db.commit()
         return True

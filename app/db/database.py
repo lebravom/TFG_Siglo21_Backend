@@ -1,14 +1,24 @@
-from sqlmodel import Session, create_engine
+from sqlmodel.ext.asyncio.session import AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncEngine, async_sessionmaker
+from typing import AsyncGenerator
 
-DATABASE_URL = "sqlite:///./mediciones.db"
+# 1. URL con driver asíncrono para SQLite
+DATABASE_URL = "sqlite+aiosqlite:///./mediciones.db"
 
-# 1. create_engine se importa desde sqlmodel (es un wrapper de SQLAlchemy)
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+# 2. Crear el motor asíncrono
+engine: AsyncEngine = create_async_engine(
+    DATABASE_URL,
+    echo=True,  # opcional: logs de SQL
+    connect_args={"check_same_thread": False}  # necesario para SQLite
+)
 
-sessionLocal = Session(engine)
 
 
-# 3. get_db se simplifica usando el manejador de contexto nativo Session de SQLModel
-def get_db():
-    with Session(engine) as session:
+
+# 3. Fábrica de sesiones asíncronas
+AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+# 4. Generador de sesión para inyección de dependencias (FastAPI)
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncSessionLocal() as session:
         yield session

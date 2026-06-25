@@ -1,7 +1,8 @@
 from datetime import datetime, UTC
 from typing import Optional
-from sqlmodel import SQLModel, Field, DateTime, Column
+from sqlmodel import Field, DateTime, Column, SQLModel
 from pydantic import EmailStr
+
 
 class Usuario(SQLModel, table=True):
 

@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from contextlib import asynccontextmanager
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import SQLModel
@@ -10,10 +11,27 @@ from core.config import config, origins
 from api.v1 import usuarios
 from api.v1 import mediciones
 
-SQLModel.metadata.create_all(engine)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Inicialización asíncrona: crear tablas
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+    yield
+    # Cierre (opcional): si tienes conexiones que cerrar
+    await engine.dispose()
+
+app = FastAPI(
+    title=config.app_name,
+    lifespan=lifespan  # <-- asigna aquí el manejador de ciclo de vida
+)
+
+
+
 setup_logging()
 app = FastAPI(title=config.app_name)
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 # ==========================================
 # INICIALIZACIÓN DE RUTAS

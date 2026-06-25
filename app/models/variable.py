@@ -1,11 +1,16 @@
-from typing import Optional, TYPE_CHECKING
-from sqlmodel import Relationship, SQLModel, Field
+from typing import List, Optional, TYPE_CHECKING
+from sqlmodel import Column, Relationship, Field, SQLModel, Text
+
+
+
+
 
 if TYPE_CHECKING:
     from models.medicion import Medicion
+    
+
 
 class Variable(SQLModel, table=True):
-
     id: Optional[int] = Field(default=None, primary_key=True)
     medicion_id: int = Field(foreign_key="medicion.id")
     nuclideName: str = Field(
@@ -25,3 +30,10 @@ class Variable(SQLModel, table=True):
     )
     # Relación inversa (Esta variable pertenece a una medición)
     medicion: Optional["Medicion"] = Relationship(back_populates="variables")
+
+class ListaVariables(SQLModel, table=False):
+    variables: List[Variable] = Field(description="Lista de radionucleidos variables identificados en la pagina 'NUCLIDE IDENTIFICATION REPORT' ")
+    texto_markdown: Optional[str] = Field(
+        default=None, 
+        sa_column=Column(Text) # Le indicamos a SQLAlchemy que use TEXT en la DB
+    )
