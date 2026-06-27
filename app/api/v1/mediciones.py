@@ -216,7 +216,7 @@ async def eliminar_medicion(medicion_id: int, service: servicioMedicion = Depend
             detail = "Error al eliminar la medición (puede estar en uso o tener depedencia no cascadeable)."
         )
     except Exception as e:
-        logger.exception(f"Error inesperado al eliminar medición {medicion_id}")
+        logger.exception(f"Error inesperado al eliminar medición {medicion_id}:",{e})
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Error interno del servidor.",
@@ -246,8 +246,20 @@ async def validar_medicion(medicion_id: int, service: servicioMedicion = Depends
     logger.info(f"El parametro recibido es: {medicion_id}, del tipo {type(medicion_id)}")
     try:
          medicion_modificada: Optional[Medicion] = await service.validar_medicion(medicion_id)
-         if medicion_modificada.id is None:
-             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,detail="Medición no encontrada")
+         return medicion_modificada
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    
+
+@router.put("/mediciones/{medicion_id}/aprobar", response_model=Medicion, status_code=status.HTTP_200_OK)
+async def aprobar_medicion(medicion_id: int, service: servicioMedicion = Depends(get_medicion_service)):
+    """
+    Aprueba una medición en la base de datos.
+    Establece el campo fecha_aprobacion en la fecha actual del sistema. 
+    """
+    logger.info(f"El parametro recibido es: {medicion_id}, del tipo {type(medicion_id)}")
+    try:
+         medicion_modificada: Optional[Medicion] = await service.aprobar_medicion(medicion_id)
          return medicion_modificada
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

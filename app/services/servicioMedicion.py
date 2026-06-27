@@ -143,22 +143,54 @@ class servicioMedicion:
         Valida una medicion en la base de datos estableciendo el campo Validada_en con el valor de la fecha actual del sistema.
         """
         try:
-            async with self._db.begin():
-                statement = select(Medicion).where(Medicion.id == medicion_id)
-                result = await self._db.exec(statement)
-                medicion = result.one_or_none()
-                if not medicion:
-                    raise ValueError(f"Medición {medicion_id} no encontrada.")
-                medicion.fecha_validacion = datetime.now(timezone.utc)
+            statement = select(Medicion).where(Medicion.id == medicion_id)
+            result = await self._db.exec(statement)
+            medicion = result.one_or_none()
+            
+            if medicion is None:
+                raise ValueError(f"Medición {medicion_id} no encontrada.")
+            medicion.fecha_validacion = datetime.now(timezone.utc)
+            await self._db.commit()
+            await self._db.refresh(medicion)
+            return medicion
 
-                return medicion
-
+        except ValueError:
+            raise   # dejar que el endpoint lo convierta en 404
         except SQLAlchemyError as e:
-            logger.error(f"Error al actualizar la medición: {medicion_id}, error: {str(e)}")
-            raise e
+            await self._db.rollback()         
+            logger.error("Error al validar medición %s: %s", medicion_id, e)
+            raise
         except Exception as e:
-            logger.exception(f"Error inesperado al actualizar la medición {medicion_id}: {str(e)}")
-            raise e
+            await self._db.rollback()
+            logger.exception("Error inesperado al validar medición %s: %s", medicion_id, e)
+            raise
+        
+    async def aprobar_medicion(self, medicion_id: int)-> Medicion:
+        """
+        Aprueba una medicion en la base de datos estableciendo el campo aprobada_en con el valor de la fecha actual del sistema.
+        """
+        try:
+            statement = select(Medicion).where(Medicion.id == medicion_id)
+            result = await self._db.exec(statement)
+            medicion = result.one_or_none()
+            
+            if medicion is None:
+                raise ValueError(f"Medición {medicion_id} no encontrada.")
+            medicion.fecha_aprobacion = datetime.now(timezone.utc)
+            await self._db.commit()
+            await self._db.refresh(medicion)
+            return medicion
+
+        except ValueError:
+            raise   # dejar que el endpoint lo convierta en 404
+        except SQLAlchemyError as e:
+            await self._db.rollback()         
+            logger.error("Error al aprobar medición %s: %s", medicion_id, e)
+            raise
+        except Exception as e:
+            await self._db.rollback()
+            logger.exception("Error inesperado al aprobar medición %s: %s", medicion_id, e)
+            raise
 
 
 

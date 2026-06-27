@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, List
 from sqlalchemy.orm import Mapped, relationship
 from sqlmodel import Column, Relationship, SQLModel, Field, Text
@@ -39,7 +39,12 @@ class Medicion(SQLModel, table=True):
         default=None, 
         sa_column=Column(Text) # Le indicamos a SQLAlchemy que use TEXT en la DB
     )
-    fecha_validacion: datetime | None = Field(default=None)
-
+    creado_en: Optional[datetime] = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        nullable=True,
+        description="Fecha de creación con default sistema"
+    )
+    fecha_aprobacion: Optional[datetime] = Field(default=None, nullable=True)
+    fecha_validacion: Optional[datetime] = Field(default=None, nullable=True)
     variables: Mapped[List["Variable"]] = Relationship(sa_relationship=relationship(back_populates="medicion", cascade="all, delete-orphan",passive_deletes=True))
     
