@@ -32,10 +32,21 @@ Sitúate en la raíz del proyecto (donde se encuentra el archivo `Dockerfile`) y
 
 docker build -t api-mediciones .
 
+Adicionalmente es necesario construir la imagen del motor de LLM Ollama y descargar el modelo Llama3.1:8b
+
+en la carpeta Llama3_1 ejecutar
+
+docker build -t llm_mediciones .
+
 ### 2. Ejecutar el contenedor
 Una vez construida la imagen, levanta el contenedor exponiendo el puerto 8000:
 
 docker run -d -p 8000:8000 --name backend-mediciones api-mediciones
+
+adicionalmente para el motor LLM ejecutar el contenedor exponiendo el puerto 11434 por defecto.
+
+docker run -d -p 11434:11434 --name ollama llm_mediciones
+
 
 🔌 Endpoints Principales
 Una vez que la aplicación esté corriendo, FastAPI genera automáticamente la documentación interactiva. Se puede acceder a ella navegando a:
