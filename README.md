@@ -32,13 +32,13 @@ Sitúate en la raíz del proyecto (donde se encuentra el archivo `Dockerfile`) y
 
 ```bash
 docker build -t api-mediciones .
-
+```
 ### 2. Ejecutar el contenedor
 Una vez construida la imagen, levanta el contenedor exponiendo el puerto 8000:
 
-Bash
+```bash
 docker run -d -p 8000:8000 --name backend-mediciones api-mediciones
-
+```
 🔌 Endpoints Principales
 Una vez que la aplicación esté corriendo, FastAPI genera automáticamente la documentación interactiva. Puedes acceder a ella navegando a:
 
@@ -47,7 +47,20 @@ Swagger UI: http://localhost:8000/docs
 ReDoc: http://localhost:8000/redoc
 
 Endpoint de Procesamiento
-POST /api/v1/mediciones/procesar: Recibe y procesa los datos de los reportes para su posterior validación en el cliente.
-
+POST    /api/v1/mediciones/procesar: Recibe y procesa los datos de los reportes para su posterior validación en el cliente.
+GET     /api/v1/usuarios  --Obtener Usuarios
+POST    /api/v1/usuarios  --Crear Usuario
+GET     /api/v1/usuarios/{user_id}  --Obtener Usuario
+PUT     /api/v1/usuarios/{user_id} --Actualizar Usuario
+DELETE  /api/v1/usuarios/{user_id} --Eliminar Usuario
+POST    /api/v1/procesar --Procesar Medicion
+GET     /api/v1/mediciones --Obtener Mediciones
+GET     /api/v1/mediciones/{medicion_id} --Obtener Medicion
+DELETE  /api/v1/mediciones/{medicion_id} --Eliminar una medición y sus variables asociadas
+PUT     /api/v1/mediciones/{medicion_id} --Modificar Medicion
+PUT     /api/v1/mediciones/{medicion_id}/validar --Validar Medicion
+PUT     /api/v1/mediciones/{medicion_id}/aprobar --Aprobar Medicion
+GET     /api/v1/mediciones/{medicion_id}/variables --Lista Variables X Medicion Id
+PUT     /api/v1/mediciones/{medicion_id}/variables --Reemplazar todas las variables de una medición.
 ⚠️ Notas de Configuración (CORS)
 El backend está configurado con middlewares de CORS para permitir peticiones desde aplicaciones cliente separadas (por ejemplo, en el TFG se utiliza un frontend en Angular corriendo en http://localhost:4200). Si necesitas habilitar nuevos dominios u orígenes para producción, asegúrate de actualizarlos en la configuración de CORSMiddleware en el archivo main.py.
