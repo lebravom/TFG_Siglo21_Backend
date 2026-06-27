@@ -33,11 +33,18 @@ class ServicioUsuario:
             await self._db.rollback()
             raise ValueError
 
-    async def actualizar_usuario(self, user_id: int, nombre_nuevo: str) -> Usuario | None:
+    async def actualizar_usuario(self, user_id: int, usuario_nuevo: Usuario) -> Usuario | None:
         usuario = await self.obtener_usuario(user_id)
         if not usuario:
             return None
-        usuario.nombre = nombre_nuevo
+        usuario.email = usuario_nuevo.email
+        usuario.username = usuario_nuevo.username
+        usuario.image_file = usuario_nuevo.image_file
+        usuario.password_hash = usuario_nuevo.password_hash
+        usuario.activo = usuario_nuevo.activo
+      
+        
+        self._db.add(usuario)
         await self._db.commit()
         await self._db.refresh(usuario)
         return usuario

@@ -1,16 +1,12 @@
+from datetime import datetime
 from typing import Optional, List
 from sqlalchemy.orm import Mapped, relationship
 from sqlmodel import Column, Relationship, SQLModel, Field, Text
 
-from app.models.variable import Variable
-
-
-
-
-    
-
+from models.variable import Variable
 
 class Medicion(SQLModel, table=True):
+    __table_args__ = {'extend_existing': True}
     id: Optional[int] = Field(default=None, primary_key=True)
     sampleTitle: str = Field(
         max_length=255,
@@ -43,5 +39,7 @@ class Medicion(SQLModel, table=True):
         default=None, 
         sa_column=Column(Text) # Le indicamos a SQLAlchemy que use TEXT en la DB
     )
-    variables: Mapped[List["Variable"]] = Relationship(sa_relationship=relationship(back_populates="medicion"))
+    fecha_validacion: datetime | None = Field(default=None)
+
+    variables: Mapped[List["Variable"]] = Relationship(sa_relationship=relationship(back_populates="medicion", cascade="all, delete-orphan",passive_deletes=True))
     

@@ -11,8 +11,9 @@ if TYPE_CHECKING:
 
 
 class Variable(SQLModel, table=True):
+    __table_args__ = {'extend_existing': True}
     id: Optional[int] = Field(default=None, primary_key=True)
-    medicion_id: int = Field(foreign_key="medicion.id")
+    medicion_id: int = Field(foreign_key="medicion.id", ondelete="CASCADE")
     nuclideName: str = Field(
         max_length=50,
         description="El nombre del radionucleido identificado en la pagina 'NUCLIDE IDENTIFICATION REPORT'",

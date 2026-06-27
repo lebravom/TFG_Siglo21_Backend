@@ -4,12 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 load_dotenv()
 
-# Origenes para configurar el CORS
-origins = [
-    "http://localhost:4200",     # Tu frontend Angular
-    "http://127.0.0.1:4200",     # Variante por IP local
-    "http://localhost:8000",     # El propio backend 
-]
+
 
 # ==========================================
 # CONFIGURACIÓN DE OLLAMA
